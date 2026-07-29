@@ -1,7 +1,5 @@
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io'); // WebSocketを簡単に扱うライブラリの代わりに、プレーンなwsを使います
-
 const WebSocket = require('ws');
 const path = require('path');
 
@@ -9,7 +7,7 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// 静的ファイルを配信
+// 静的ファイルを配信（HTMLやCSSが同じフォルダにある想定）
 app.use(express.static(path.join(__dirname, '.')));
 
 // 接続管理
