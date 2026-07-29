@@ -81,6 +81,18 @@
                 request.onerror (event) => resolve(event.target.error);
             });
         }
+
+        async function setHasWarned() {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction('settings', 'readwrite');
+                const store = transaction.objectStore('settings');
+                const request = store.put(true, 'hasSeenPrivacyWarning');
+
+                request.onsuccess (event) => resolve(event.target.result);
+                request.onerror (event) => resolve(event.target.error);
+            });
+        }
         ws.onmessage = (event) => {
             const chatBox = document.getElementById('chat-box');
             
@@ -112,6 +124,13 @@
         };
 
         function sendMessage() {
+            if (!hasWarned) {
+                alert(`【注意】
+                送信する際、個人情報(本名または住所、連絡先、LINEID、パスワードなど)を送信しないでください。
+                当ウェブサイトでは匿名でチャットできる為、名前は未公開となります。ご注意ください。
+                当ウェブサイトでは他の人が心地いい快適にチャットができるように、他人が誤解を招く言葉やデマ情報や
+                他の人を批判するような噂`);
+            }
             const input = document.getElementById('message-input');
             const val = input.value.trim();
             if (val !== '') {
