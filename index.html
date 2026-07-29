@@ -54,6 +54,33 @@
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const ws = new WebSocket(`${protocol}//${window.location.host}/?room=${currentRoom}`);
 
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('ChatAppDB', 1);
+
+                request.onupgradeneeded = (event) => {
+                    // テーブルがなかった場合、テーブルを作成する
+                    if (!db.objectStoreNames.contains('settings')) {
+                        db.createObjectStore('settings');
+                    }
+                };
+
+                request.onsuccess (event) => resolve(event.target.result);
+                request.onerror (event) => resolve(event.target.error);
+            });
+        }
+
+        async function checkHasWarned() {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction('settings', 'readonly');
+                const store = transaction.objectStore('settings');
+                const request = store.get('hasSeenPrivacyWarning');
+
+                request.onsuccess (event) => resolve(event.target.result);
+                request.onerror (event) => resolve(event.target.error);
+            });
+        }
         ws.onmessage = (event) => {
             const chatBox = document.getElementById('chat-box');
             
