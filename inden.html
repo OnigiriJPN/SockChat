@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SockChat</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #7494c0; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; }
+        header { background: #fff; padding: 10px; text-align: center; font-weight: bold; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+        #room-select { padding: 5px; font-size: 14px; }
+        #chat-box { flex: 1; overflow-y: scroll; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .message { max-width: 70%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; word-break: break-all; position: relative; }
+        /* 相手のメッセージ（左側・白） */
+        .message.left { background: #fff; align-self: flex-start; border-top-left-radius: 4px; }
+        /* 自分のメッセージ（右側・LINE風グリーン） */
+        .message.right { background: #89e219; align-self: flex-end; border-top-right-radius: 4px; }
+        .input-area { background: #f6f6f6; padding: 10px; display: flex; gap: 8px; border-top: 1px solid #ddd; }
+        textarea { flex: 1; padding: 8px 12px; border: 1px solid #ccc; border-radius: 20px; resize: none; outline: none; font-size: 14px; height: 20px; max-height: 80px; }
+        button { background: #06c755; color: white; border: none; padding: 0 16px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        button:active { opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <span>SockChat 💬</span>
+        <div>
+            ルーム: 
+            <select id="room-select" onchange="changeRoom()">
+                <option value="general"># 雑談ルーム</option>
+                <option value="work"># 作業・開発</option>
+                <option value="secret"># ひそひそ部屋</option>
+            </select>
+        </div>
+    </header>
+
+    <div id="chat-box"></div>
+
+    <div class="input-area">
+        <textarea id="message-input" placeholder="メッセージ (Shift+Enterで改行)" rows="1" autofocus></textarea>
+        <button onclick="sendMessage()">送信</button>
+    </div>
+
+    <script>
+        // 現在のURLからルームを取得してセレクトボックスを合わせる
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentRoom = urlParams.get('room') || 'general';
+        document.getElementById('room-select').value = currentRoom;
+
+        // 簡易的なユーザー識別用ID（ブラウザごとにランダム）
+        const myId = Math.random().toString(36).substring(2, 9);
+
+        // WebSocket接続（ルーム情報をURLに含める）
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${protocol}//${window.location.host}/?room=${currentRoom}`);
+
+        ws.onmessage = (event) => {
+            const chatBox = document.getElementById('chat-box');
+            
+            // 簡易的に「送信者ID|本文」の形式でデータをやり取りする
+            let data = event.data;
+            let sender = "unknown";
+            let text = data;
+
+            if (data.includes('|:')) {
+                const parts = data.split('|:');
+                sender = parts[0];
+                text = parts[1];
+            }
+
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message');
+            
+            // 自分か他人かで左右を分ける
+            if (sender === myId) {
+                msgDiv.classList.add('right');
+            } else {
+                msgDiv.classList.add('left');
+            }
+
+            // 改行を反映
+            msgDiv.innerHTML = text.replace(/\n/g, '<br>');
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        };
+
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const val = input.value.trim();
+            if (val !== '') {
+                // 「自分のID|:メッセージ本文」の形で送信
+                ws.send(`${myId}|:${val}`);
+                input.value = '';
+                input.style.height = '20px';
+            }
+        }
+
+        function changeRoom() {
+            const selectedRoom = document.getElementById('room-select').value;
+            window.location.href = `/?room=${selectedRoom}`;
+        }
+
+        // キー操作（Shift+Enterで改行、単体Enterで送信）
+        const textarea = document.getElementById('message-input');
+        textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                if (e.shiftKey) {
+                    return; // 許可（改行）
+                } else {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
