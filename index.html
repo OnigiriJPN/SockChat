@@ -124,21 +124,37 @@
         };
 
         function sendMessage() {
+            const input = document.getElementById('message-input');
+            const val = input.value.trim();
             if (!hasWarned) {
                 alert(`【注意】
                 送信する際、個人情報(本名または住所、連絡先、LINEID、パスワードなど)を送信しないでください。
                 当ウェブサイトでは匿名でチャットできる為、名前は未公開となります。ご注意ください。
-                当ウェブサイトでは他の人が心地いい快適にチャットができるように、他人が誤解を招く言葉やデマ情報や
-                他の人を批判するような噂`);
+                当ウェブサイトでは他の人が快適にチャットができるように、他人が誤解を招く言葉やデマ情報や
+                他の人を批判するような噂や、
+                他人の悪口を言うなどのいじめに繋がる行為はやめていただきますよう、ご協力をお願いします。`);
+                if (val !== '') {
+                   // 「自分のID|:メッセージ本文」の形で送信
+                   ws.send(`${myId}|:${val}`);
+                   input.value = '';
+                   input.style.height = '20px';
+                } else {
+                    alert(`メッセージを入力してください。入力し終わったら、送信を押してください。
+                    ※初回の場合は、警告が出ます。OKを押してください。`);
+                    return;
+                }
             }
-            const input = document.getElementById('message-input');
-            const val = input.value.trim();
+
             if (val !== '') {
                 // 「自分のID|:メッセージ本文」の形で送信
                 ws.send(`${myId}|:${val}`);
                 input.value = '';
                 input.style.height = '20px';
-            }
+            } else {
+                    alert(`メッセージを入力してください。入力し終わったら、送信を押してください。
+                    ※初回の場合は、警告が出ます。OKを押してください。`);
+                    return;
+                }
         }
 
         function changeRoom() {
